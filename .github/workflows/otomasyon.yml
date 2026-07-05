@@ -1,0 +1,37 @@
+name: Pazarlama Verisi Toplayıcı Bot
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # UTC zaman dilimine göre her gün sabah 09:00'da otomatik çalışır
+  workflow_dispatch:     # İstediğiniz an manuel olarak çalıştırma butonu ekler
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # Botun CSV dosyasına yazıp depoyu güncelleyebilmesi için gerekli izin
+
+    steps:
+    - name: Depo Kodlarını Klonla
+      uses: actions/checkout@v4
+
+    - name: Python Kurulumu
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Gerekli Kütüphaneleri Yükle
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Botu Çalıştır ve Veri Çek
+      run: python scraper.py
+
+    - name: Verileri Güncelle ve GitHub'a Yükle
+      run: |
+        git config --global user.name "Pazarlama Botu"
+        git config --global user.email "actions@github.com"
+        git add pazarlama_verileri.csv
+        git commit -m "Güncel pazarlama verileri eklendi: $(date +'%Y-%m-%d %H:%M:%S')" || echo "Yeni veri yok veya değişiklik yapılmadı."
+        git push
